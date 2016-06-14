@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
     private CallbackManager callbackManager;
 
-    private String serverUrl = "http://140.116.245.241:9999/User.php";
+    private String serverUrl = "http://140.116.245.241:9999/UserPost.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

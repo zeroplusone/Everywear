@@ -4,6 +4,9 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -20,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +32,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 public class Camera extends AppCompatActivity {
@@ -41,12 +46,16 @@ public class Camera extends AppCompatActivity {
     private static final String JPEG_FILE_PREFIX = "IMG_";
     private static final String JPEG_FILE_SUFFIX = ".jpg";
     private AlbumStorageDirFactory mAlbumStorageDirFactory = null;
-    private Bitmap bitmap = null;
+    private Bitmap weatherBitmap = null;
     private File sourceFile = null;
+    private File weatherFile = null;
 
-    private String serverUrl = "http://140.116.245.241:9999/Post.php";
-
+    private String pictureUrl = "http://140.116.245.241:9999/PictureUpload.php";
+    private String databaseUrl = "http://140.116.245.241:9999/UserPost.php";
     private ProgressDialog progress;
+
+    private final int SEND_SOURCE_FILE = 0;
+    private final int SEND_WEATHER_FILE =1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +86,9 @@ public class Camera extends AppCompatActivity {
                 progress.setTitle("Loading");
                 progress.setMessage("Wait while loading...");
                 progress.show();
-                sendPicRequest();
+                sendPicRequest(SEND_SOURCE_FILE);
+                sendPicRequest(SEND_WEATHER_FILE);
+                sendPostRequest();
             }
         });
 
@@ -101,6 +112,10 @@ public class Camera extends AppCompatActivity {
             case 200:
 
                 dispatchTakePictureIntent();
+                break;
+
+            case 400:
+                ouputBitmapToFile();
                 break;
 
         }
@@ -127,19 +142,19 @@ public class Camera extends AppCompatActivity {
 
     private File setUpPhotoFile() throws IOException {
 
-        File f = createImageFile();
-        mCurrentPhotoPath = f.getAbsolutePath();
+        sourceFile = createImageFile("SourceFile");
+        mCurrentPhotoPath = sourceFile.getAbsolutePath();
 
-        return f;
+        return sourceFile;
     }
 
-    private File createImageFile() throws IOException {
+    private File createImageFile(String filename) throws IOException {
         // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = JPEG_FILE_PREFIX + timeStamp + "_";
+        //String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = JPEG_FILE_PREFIX + filename;
         File albumF = getAlbumDir();
         File imageF = File.createTempFile(imageFileName, JPEG_FILE_SUFFIX, albumF);
-        sourceFile = imageF;
+
         return imageF;
     }
 
@@ -216,10 +231,12 @@ public class Camera extends AppCompatActivity {
 
 		/* Decode the JPEG file into a Bitmap */
         Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-        this.bitmap = bitmap;
+
+        Bitmap drawnBitmap = drawWeatherData(bitmap);
+
 
 		/* Associate the Bitmap to the ImageView */
-        mImageView.setImageBitmap(bitmap);
+        mImageView.setImageBitmap(drawnBitmap);
         mImageView.setVisibility(View.VISIBLE);
 
     }
@@ -266,15 +283,37 @@ public class Camera extends AppCompatActivity {
         }
     }
 
-    private void sendPicRequest() {
+    private void sendPicRequest(int whichFile) {
         class AddPostRunnable implements Runnable {
 
+            File inputFile;
+            String attachmentFileName;
+
+            AddPostRunnable(int whichFile) {
+                attachmentFileName = "id_";
+
+                Calendar mCal = Calendar.getInstance();
+                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
+                attachmentFileName += df.format(mCal.getTime());
+
+                switch(whichFile){
+                    case SEND_SOURCE_FILE:
+                        this.inputFile = sourceFile;
+                        break;
+                    case SEND_WEATHER_FILE:
+                        this.inputFile = weatherFile;
+                        attachmentFileName+="_revised";
+                        break;
+                }
+                attachmentFileName+=".jpg";
+
+            }
 
             @Override
             public void run() {
 
                 String attachmentName = "uploaded_file";
-                String attachmentFileName = "bitmap.bmp";
+
                 String crlf = "\r\n";
                 String twoHyphens = "--";
                 String boundary = "*****";
@@ -285,10 +324,10 @@ public class Camera extends AppCompatActivity {
 
                 try {
 
-                    FileInputStream fileInputStream = new FileInputStream(sourceFile);
+                    FileInputStream fileInputStream = new FileInputStream(inputFile);
                     // setup request
                     HttpURLConnection httpUrlConnection = null;
-                    URL url = new URL(serverUrl);
+                    URL url = new URL(pictureUrl);
                     httpUrlConnection = (HttpURLConnection) url.openConnection();
                     httpUrlConnection.setUseCaches(false);
                     httpUrlConnection.setDoOutput(true);
@@ -344,7 +383,47 @@ public class Camera extends AppCompatActivity {
 
             }
         }
-        Thread t = new Thread(new AddPostRunnable());
+        Thread t = new Thread(new AddPostRunnable(whichFile));
+        t.start();
+
+    }
+
+    private void sendPostRequest(String... args) {
+        class AddUserRunnable implements Runnable {
+
+            String[] args;
+
+            AddUserRunnable(String[] args) {
+                this.args = args;
+            }
+
+            @Override
+            public void run() {
+                for (int i = 0; i < args.length; i += 2) {
+                    databaseUrl += i == 0 ? "?" : "&";
+                    databaseUrl += args[i] + "=" + args[i + 1];
+                }
+                Log.d("FB", databaseUrl);
+                URL url = null;
+                HttpURLConnection urlConnection = null;
+                try {
+                    url = new URL(databaseUrl);
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
+                    Log.d("FB", readStream(urlConnection.getInputStream()));
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (urlConnection != null) {
+                        urlConnection.disconnect();
+                    }
+                }
+            }
+        }
+        Thread t = new Thread(new AddUserRunnable(args));
         t.start();
 
     }
@@ -363,12 +442,81 @@ public class Camera extends AppCompatActivity {
         return total.toString();
     }
 
+
+
     private void turnToFeed(){
         progress.dismiss();
         Intent postIntent = new Intent();
         postIntent.setClass(Camera.this, Feed.class);
         startActivity(postIntent);
         finish();
+    }
+
+    private Bitmap drawWeatherData(Bitmap bitmap){
+        // initial
+        weatherBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_4444);
+        Canvas canvas = new Canvas(weatherBitmap);
+        Paint paint = new Paint();
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        //draw original bitmap
+        canvas.drawBitmap(bitmap, 0, 0, paint);
+
+        //TODO: add weather API
+
+        //draw rectangle
+        paint.setColor(Color.WHITE);
+        paint.setAlpha(150);
+        canvas.drawRect((float) (width * 0.1), (float) (height * 0.8), (float) (width * 0.1 + width * 0.8), (float) (height * 0.8 + height * 0.15), paint);
+
+        //draw status
+        Bitmap statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.sun);
+        statusIcon = Bitmap.createScaledBitmap(statusIcon, (int) (height * 0.13), (int) (height * 0.13), false);
+        canvas.drawBitmap(statusIcon, (float) (width * 0.11), (float) (height * 0.81), paint);
+
+        //draw text
+        paint.setTextSize(200);
+        paint.setAlpha(0);
+        paint.setColor(Color.BLACK);
+        canvas.drawText("28 C", (float) (width * 0.7), (float) (height * 0.9), paint);
+
+        //draw chinese city name
+        paint.setTextSize(150);
+        paint.setAlpha(0);
+        paint.setColor(Color.BLACK);
+        canvas.drawText("台北市", (float) (width * 0.15 + height * 0.13 ), (float) (height *0.86), paint);
+
+        //draw english city name
+        paint.setTextSize(150);
+        paint.setAlpha(0);
+        paint.setColor(Color.BLACK);
+        canvas.drawText("Taipei city", (float) (width * 0.15 + height * 0.13), (float) (height * 0.93), paint);
+
+
+
+        getOutputPermission();
+        return weatherBitmap;
+    }
+
+    private void getOutputPermission(){
+        String[] perms = {"android.permission.WRITE_EXTERNAL_STORAGE"};
+        int permsRequestCode = 400;
+        requestPermissions(perms, permsRequestCode);
+    }
+
+    private void ouputBitmapToFile(){
+        try {
+
+            weatherFile = new File(Environment.getExternalStorageDirectory().toString(), "weatherTmp.jpg");
+            FileOutputStream out = new FileOutputStream(weatherFile);
+            weatherBitmap.compress(Bitmap.CompressFormat.JPEG,95, out);
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
