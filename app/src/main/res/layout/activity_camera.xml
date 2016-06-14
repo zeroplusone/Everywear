@@ -24,8 +24,7 @@
         android:text="post picture"
         android:id="@+id/btn_post"
         android:layout_alignParentBottom="true"
-        android:layout_alignEnd="@+id/imageView"
-        android:layout_marginBottom="62dp" />
+        android:layout_alignParentEnd="true" />
 
     <Button
         android:layout_width="wrap_content"

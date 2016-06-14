@@ -1,13 +1,22 @@
 package maclab.everywear;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
+import com.facebook.FacebookSdk;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Feed extends AppCompatActivity {
@@ -19,6 +28,11 @@ public class Feed extends AppCompatActivity {
     private ImageButton tab_feed;
     private ImageButton tab_camera;
     private ImageButton tab_setting;
+
+    private FBData fbData;
+
+    private final int SETTING_LOGIN_REQUEST = 10;
+    private final int CAMERA_LOGIN_REQUEST = 20;
 
 
     @Override
@@ -35,7 +49,9 @@ public class Feed extends AppCompatActivity {
         tab_camera.setOnClickListener(cameraOnClickListener);
         tab_setting.setOnClickListener(settingOnClickListener);
 
+        checkNetworkStatus();
         loadFeed();
+        fbData = new FBData();
     }
 
     private void loadFeed(){
@@ -76,9 +92,14 @@ public class Feed extends AppCompatActivity {
 
         @Override
         public void onClick(View v) {
-            Intent cameraIntent = new Intent();
-            cameraIntent.setClass(Feed.this, Camera.class);
-            startActivity(cameraIntent);
+            if(!fbData.getIsLogin()) {
+                login(CAMERA_LOGIN_REQUEST);
+            } else {
+                Intent cameraIntent = new Intent();
+                cameraIntent.setClass(Feed.this, Camera.class);
+                cameraIntent.putExtra("data", fbData);
+                startActivity(cameraIntent);
+            }
         }
     };
 
@@ -87,6 +108,76 @@ public class Feed extends AppCompatActivity {
         @Override
         public void onClick(View v) {
 
+            if(!fbData.getIsLogin()) {
+                login(SETTING_LOGIN_REQUEST);
+            }
+            else {
+                //TODO: link to Setting activity
+                Log.d("FB", "feed" + fbData.getUserId());
+                Log.d("FB", "feed" + fbData.getUserName());
+                Log.d("FB", "feed" + fbData.getUserPic());
+            }
         }
     };
+
+    private void login(int resultIndex){
+        Intent fbIntent = new Intent();
+        fbIntent.setClass(Feed.this, FBLogin.class);
+        fbIntent.putExtra("data", fbData);
+        startActivityForResult(fbIntent, resultIndex);
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SETTING_LOGIN_REQUEST) {
+            if(resultCode == RESULT_OK){
+                fbData = (FBData) data.getSerializableExtra("data");
+                //TODO: link to Setting activity
+            }
+        } else if (requestCode == CAMERA_LOGIN_REQUEST) {
+            if(resultCode == RESULT_OK){
+                fbData = (FBData) data.getSerializableExtra("data");
+                Intent cameraIntent = new Intent();
+                cameraIntent.setClass(Feed.this, Camera.class);
+                cameraIntent.putExtra("data", fbData);
+                startActivity(cameraIntent);
+            }
+        }
+    }
+
+
+    private void checkNetworkStatus() {
+        ConnectivityManager mConnectivityManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo mNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
+
+        //如果未連線的話，mNetworkInfo會等於null
+        if (mNetworkInfo != null) {
+            //網路是否可使用
+            if (!mNetworkInfo.isAvailable()) {
+                dialog("網路無法連線");
+            }
+
+        } else {
+            dialog("請連接網路");
+        }
+    }
+
+    protected void dialog(String msg) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(msg);
+        builder.setTitle("提示");
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+
+
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+
+
+        });
+
+        builder.create().show();
+    }
+
 }
