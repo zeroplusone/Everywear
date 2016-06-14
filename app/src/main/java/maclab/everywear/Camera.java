@@ -1,5 +1,6 @@
 package maclab.everywear;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -45,31 +46,14 @@ public class Camera extends AppCompatActivity {
 
     private String serverUrl = "http://140.116.245.241:9999/Post.php";
 
+    private ProgressDialog progress;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
         mImageView = (ImageView) findViewById(R.id.imageView);
-        btn_post = (Button) findViewById(R.id.btn_post);
-        btn_post.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendPicRequest();
-                /*Intent postIntent = new Intent();
-                postIntent.setClass(Camera.this, Feed.class);
-                startActivity(postIntent);
-                finish();*/
-            }
-        });
-
-        btn_cancel = (Button) findViewById(R.id.btn_cancel);
-        btn_cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
             mAlbumStorageDirFactory = new FroyoAlbumDirFactory();
@@ -84,6 +68,28 @@ public class Camera extends AppCompatActivity {
         } else {
             dispatchTakePictureIntent();
         }
+
+        btn_post = (Button) findViewById(R.id.btn_post);
+        progress = new ProgressDialog(this);
+        btn_post.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                progress.setTitle("Loading");
+                progress.setMessage("Wait while loading...");
+                progress.show();
+                sendPicRequest();
+            }
+        });
+
+        btn_cancel = (Button) findViewById(R.id.btn_cancel);
+        btn_cancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+
     }
 
 
@@ -334,6 +340,7 @@ public class Camera extends AppCompatActivity {
                 } catch (IOException e) {
                     Log.d("feedback", "Exception : " + e.getMessage(), e);
                 }
+                turnToFeed();
 
             }
         }
@@ -354,6 +361,14 @@ public class Camera extends AppCompatActivity {
             e.printStackTrace();
         }
         return total.toString();
+    }
+
+    private void turnToFeed(){
+        progress.dismiss();
+        Intent postIntent = new Intent();
+        postIntent.setClass(Camera.this, Feed.class);
+        startActivity(postIntent);
+        finish();
     }
 
 }
