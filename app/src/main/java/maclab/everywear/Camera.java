@@ -14,8 +14,18 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -30,6 +40,10 @@ public class Camera extends AppCompatActivity {
     private static final String JPEG_FILE_PREFIX = "IMG_";
     private static final String JPEG_FILE_SUFFIX = ".jpg";
     private AlbumStorageDirFactory mAlbumStorageDirFactory = null;
+    private Bitmap bitmap = null;
+    private File sourceFile = null;
+
+    private String serverUrl = "http://140.116.245.241:9999/Post.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,10 +55,11 @@ public class Camera extends AppCompatActivity {
         btn_post.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent postIntent = new Intent();
+                sendPicRequest();
+                /*Intent postIntent = new Intent();
                 postIntent.setClass(Camera.this, Feed.class);
                 startActivity(postIntent);
-                finish();
+                finish();*/
             }
         });
 
@@ -118,6 +133,7 @@ public class Camera extends AppCompatActivity {
         String imageFileName = JPEG_FILE_PREFIX + timeStamp + "_";
         File albumF = getAlbumDir();
         File imageF = File.createTempFile(imageFileName, JPEG_FILE_SUFFIX, albumF);
+        sourceFile = imageF;
         return imageF;
     }
 
@@ -194,10 +210,12 @@ public class Camera extends AppCompatActivity {
 
 		/* Decode the JPEG file into a Bitmap */
         Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
+        this.bitmap = bitmap;
 
 		/* Associate the Bitmap to the ImageView */
         mImageView.setImageBitmap(bitmap);
         mImageView.setVisibility(View.VISIBLE);
+
     }
 
     private void galleryAddPic() {
@@ -240,6 +258,102 @@ public class Camera extends AppCompatActivity {
                     albumName
             );
         }
+    }
+
+    private void sendPicRequest() {
+        class AddPostRunnable implements Runnable {
+
+
+            @Override
+            public void run() {
+
+                String attachmentName = "uploaded_file";
+                String attachmentFileName = "bitmap.bmp";
+                String crlf = "\r\n";
+                String twoHyphens = "--";
+                String boundary = "*****";
+
+                int maxBufferSize = 1 * 1024 * 1024;
+                int bytesRead, bytesAvailable, bufferSize;
+                byte[] buffer;
+
+                try {
+
+                    FileInputStream fileInputStream = new FileInputStream(sourceFile);
+                    // setup request
+                    HttpURLConnection httpUrlConnection = null;
+                    URL url = new URL(serverUrl);
+                    httpUrlConnection = (HttpURLConnection) url.openConnection();
+                    httpUrlConnection.setUseCaches(false);
+                    httpUrlConnection.setDoOutput(true);
+
+                    httpUrlConnection.setRequestMethod("POST");
+                    httpUrlConnection.setRequestProperty("Connection", "Keep-Alive");
+                    httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
+                    httpUrlConnection.setRequestProperty(
+                            "Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                    // start content wrapper
+                    DataOutputStream request = new DataOutputStream(httpUrlConnection.getOutputStream());
+
+                    request.writeBytes(twoHyphens + boundary + crlf);
+                    request.writeBytes("Content-Disposition: form-data; name=\"" + attachmentName + "\";filename=\"" + attachmentFileName + "\"" + crlf);
+                    request.writeBytes(crlf);
+
+                    // convert file to bytebuffer
+
+                    // create a buffer of  maximum size
+                    bytesAvailable = fileInputStream.available();
+
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    buffer = new byte[bufferSize];
+
+                    // read file and write it into form...
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                    while (bytesRead > 0) {
+
+                        request.write(buffer, 0, bufferSize);
+                        bytesAvailable = fileInputStream.available();
+                        bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                        bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                    }
+
+                    //end content wrapper
+                    request.writeBytes(crlf);
+                    request.writeBytes(twoHyphens + boundary + twoHyphens + crlf);
+
+                    // flush output buffer
+                    request.flush();
+                    request.close();
+
+                    // get responses
+                    Log.d("feedback", "HTTP Response is : " + httpUrlConnection.getResponseMessage() + ": " + httpUrlConnection.getResponseCode());
+                    Log.d("feedback", readStream(httpUrlConnection.getInputStream()));
+                } catch (IOException e) {
+                    Log.d("feedback", "Exception : " + e.getMessage(), e);
+                }
+
+            }
+        }
+        Thread t = new Thread(new AddPostRunnable());
+        t.start();
+
+    }
+
+    private String readStream(InputStream in) {
+        BufferedReader r = new BufferedReader(new InputStreamReader(in));
+        StringBuilder total = new StringBuilder();
+        String line = null;
+        try {
+            while ((line = r.readLine()) != null) {
+                total.append(line).append('\n');
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return total.toString();
     }
 
 }

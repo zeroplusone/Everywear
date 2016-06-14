@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
     private CallbackManager callbackManager;
 
-    private String serverUrl = "http://140.116.245.241/index.php";
+    private String serverUrl = "http://140.116.245.241:9999/User.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,14 +152,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendRequest(String... args) {
-        class AddUserRunnable implements Runnable{
+        class AddUserRunnable implements Runnable {
 
             String[] args;
-            AddUserRunnable(String[] args){this.args = args;}
+
+            AddUserRunnable(String[] args) {
+                this.args = args;
+            }
+
             @Override
             public void run() {
                 for (int i = 0; i < args.length; i += 2) {
-                    serverUrl+= i==0?"?":"&";
+                    serverUrl += i == 0 ? "?" : "&";
                     serverUrl += args[i] + "=" + args[i + 1];
                 }
                 Log.d("FB", serverUrl);
@@ -170,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setRequestMethod("GET");
                     urlConnection.connect();
-                    Log.d("FB",readStream(urlConnection.getInputStream()));
+                    Log.d("FB", readStream(urlConnection.getInputStream()));
 
 
                 } catch (IOException e) {
@@ -212,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog("網路無法連線");
             }
 
-        } else{
+        } else {
             dialog("請連接網路");
         }
     }
