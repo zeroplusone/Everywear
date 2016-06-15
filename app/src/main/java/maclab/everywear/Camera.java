@@ -98,8 +98,7 @@ public class Camera extends AppCompatActivity {
 
                 getTimeStampName();
                 sendPicRequest(SEND_SOURCE_FILE);
-                sendPicRequest(SEND_WEATHER_FILE);
-                sendPostRequest();
+
             }
         });
 
@@ -397,12 +396,22 @@ public class Camera extends AppCompatActivity {
                 } catch (IOException e) {
                     Log.d("feedback", "Exception : " + e.getMessage(), e);
                 }
-                turnToFeed();
+
 
             }
         }
         Thread t = new Thread(new AddPicRunnable(whichFile));
         t.start();
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        if(whichFile == SEND_SOURCE_FILE){
+            sendPicRequest(SEND_WEATHER_FILE);
+        } else if (whichFile == SEND_WEATHER_FILE){
+            sendPostRequest();
+        }
 
     }
 
@@ -436,6 +445,7 @@ public class Camera extends AppCompatActivity {
                     if (urlConnection != null) {
                         urlConnection.disconnect();
                     }
+                    turnToFeed();
                 }
             }
         }
@@ -462,7 +472,6 @@ public class Camera extends AppCompatActivity {
     private void turnToFeed() {
         progress.dismiss();
         Intent intent = new Intent();
-        intent.putExtra("data", fbData);
         setResult(RESULT_OK, intent);
         finish();
     }
@@ -509,7 +518,7 @@ public class Camera extends AppCompatActivity {
         paint.setTextSize(200);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText(temp.substring(0, temp.indexOf(".")) + " C", (float) (width * 0.7), (float) (height * 0.9), paint);
+        canvas.drawText(temp.substring(0, temp.indexOf(".")) + "℃", (float) (width * 0.7), (float) (height * 0.9), paint);
 
         //draw chinese city name
         paint.setTextSize(150);

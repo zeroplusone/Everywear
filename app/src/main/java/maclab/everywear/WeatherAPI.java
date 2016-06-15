@@ -11,6 +11,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,6 +76,7 @@ public class WeatherAPI {
         Geocoder gc = new Geocoder(activity, Locale.TRADITIONAL_CHINESE);
         List<Address> lstAddress = null;
         try {
+            Log.d("feedback", lat + " " + lng);
             lstAddress = gc.getFromLocation(lat, lng, 1);
             city_zh = lstAddress.get(0).getAdminArea();
         } catch (IOException e) {

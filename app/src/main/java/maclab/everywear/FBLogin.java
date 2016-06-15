@@ -96,6 +96,10 @@ public class FBLogin extends AppCompatActivity {
                     @Override
                     public void onCancel() {
                         Log.d("FB", "On cancel");
+                        Intent intent = new Intent();
+                        intent.putExtra("data",fbData);
+                        setResult(RESULT_CANCELED, intent);
+                        finish();
                     }
 
                     @Override
@@ -146,7 +150,7 @@ public class FBLogin extends AppCompatActivity {
                     urlConnection.setRequestMethod("GET");
                     urlConnection.connect();
                     Log.d("FB", readStream(urlConnection.getInputStream()));
-                    sendDataBack();
+                    sendDataBack(RESULT_OK);
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -178,10 +182,10 @@ public class FBLogin extends AppCompatActivity {
 
 
 
-    private void sendDataBack(){
+    private void sendDataBack(int resultCode){
         Intent intent = new Intent();
         intent.putExtra("data",fbData);
-        setResult(RESULT_OK, intent);
+        setResult(resultCode, intent);
         finish();
     }
 }

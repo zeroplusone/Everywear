@@ -1,6 +1,7 @@
 package maclab.everywear;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -56,10 +57,17 @@ public class FeedListAdapter extends BaseAdapter {
         FeedItem item = feedItems.get(position);
         // set user name
         name.setText(item.getName());
+
+        ImageView profileIv = (ImageView) convertView.findViewById(R.id.pic_profile);
+        ImageView postIv = (ImageView) convertView.findViewById(R.id.pic_wearing);
+
+
+
         // set profile picture
         new DownloadImageTask((ImageView) convertView.findViewById(R.id.pic_profile)).execute(item.getPic());
         // set weather picture
         new DownloadImageTask((ImageView) convertView.findViewById(R.id.pic_wearing)).execute(item.getWeather_pic());
+
 
         return convertView;
     }
@@ -88,6 +96,13 @@ public class FeedListAdapter extends BaseAdapter {
         protected void onPostExecute(Bitmap result) {
             bmImage.setImageBitmap(result);
         }
+    }
+
+    public void swipeItem(ArrayList<FeedItem> items) {
+        feedItems.clear();
+        feedItems.addAll(items);
+        notifyDataSetChanged();
+
     }
 }
 
