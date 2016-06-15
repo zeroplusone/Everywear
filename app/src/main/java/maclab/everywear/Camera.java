@@ -56,7 +56,7 @@ public class Camera extends AppCompatActivity {
     private ProgressDialog progress;
 
     private final int SEND_SOURCE_FILE = 0;
-    private final int SEND_WEATHER_FILE =1;
+    private final int SEND_WEATHER_FILE = 1;
 
     private FBData fbData;
     private WeatherAPI weatherAPI;
@@ -108,7 +108,7 @@ public class Camera extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
-                intent.putExtra("data",fbData);
+                intent.putExtra("data", fbData);
                 setResult(RESULT_OK, intent);
                 finish();
             }
@@ -297,8 +297,8 @@ public class Camera extends AppCompatActivity {
         }
     }
 
-    private void getTimeStampName(){
-        timeStampName = fbData.getUserId()+"_";
+    private void getTimeStampName() {
+        timeStampName = fbData.getUserId() + "_";
         Calendar mCal = Calendar.getInstance();
         SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
         timeStampName += df.format(mCal.getTime());
@@ -313,16 +313,16 @@ public class Camera extends AppCompatActivity {
             AddPicRunnable(int whichFile) {
 
                 attachmentFileName = timeStampName;
-                switch(whichFile){
+                switch (whichFile) {
                     case SEND_SOURCE_FILE:
                         this.inputFile = sourceFile;
                         break;
                     case SEND_WEATHER_FILE:
                         this.inputFile = weatherFile;
-                        attachmentFileName+="_revised";
+                        attachmentFileName += "_revised";
                         break;
                 }
-                attachmentFileName+=".jpg";
+                attachmentFileName += ".jpg";
 
             }
 
@@ -354,7 +354,7 @@ public class Camera extends AppCompatActivity {
                     httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
                     httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
                     httpUrlConnection.setRequestProperty(
-                            "Content-Type", "multipart/form-data;boundary=" + boundary+";charset=utf-8");
+                            "Content-Type", "multipart/form-data;boundary=" + boundary + ";charset=utf-8");
 
                     // start content wrapper
                     DataOutputStream request = new DataOutputStream(httpUrlConnection.getOutputStream());
@@ -412,12 +412,12 @@ public class Camera extends AppCompatActivity {
 
             @Override
             public void run() {
-                databaseUrl+="?action=addPost";
-                databaseUrl+="&id="+fbData.getUserId();
-                databaseUrl+="&oPic="+timeStampName+".jpg";
-                databaseUrl+="&wPic="+timeStampName+"_revised.jpg";
-                databaseUrl+="&city_zh="+String.valueOf(weatherAPI.getCity_zh());
-                databaseUrl+="&city_en="+String.valueOf(weatherAPI.getCity_en());
+                databaseUrl += "?action=addPost";
+                databaseUrl += "&id=" + fbData.getUserId();
+                databaseUrl += "&oPic=" + timeStampName + ".jpg";
+                databaseUrl += "&wPic=" + timeStampName + "_revised.jpg";
+                databaseUrl += "&city_zh=" + String.valueOf(weatherAPI.getCityZhbyGPS());
+                databaseUrl += "&city_en=" + String.valueOf(weatherAPI.getCityEnbyGPS());
 
                 Log.d("FB", databaseUrl);
                 URL url = null;
@@ -459,16 +459,15 @@ public class Camera extends AppCompatActivity {
     }
 
 
-
-    private void turnToFeed(){
+    private void turnToFeed() {
         progress.dismiss();
         Intent intent = new Intent();
-        intent.putExtra("data",fbData);
+        intent.putExtra("data", fbData);
         setResult(RESULT_OK, intent);
         finish();
     }
 
-    private Bitmap drawWeatherData(Bitmap bitmap){
+    private Bitmap drawWeatherData(Bitmap bitmap) {
         // initial
         weatherBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_4444);
         Canvas canvas = new Canvas(weatherBitmap);
@@ -493,53 +492,48 @@ public class Camera extends AppCompatActivity {
         canvas.drawBitmap(statusIcon, (float) (width * 0.11), (float) (height * 0.81), paint);
 
         //draw text
-        Calendar mCal = Calendar.getInstance();
-        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
-        String temp=String.valueOf(weatherAPI.getTempbyGPS(new SimpleDateFormat("yyyy/MM/dd").format(mCal.getTime()), new SimpleDateFormat("HH").format(mCal.getTime())));
+        String temp = String.valueOf(weatherAPI.getTempbyGPSNow());
         paint.setTextSize(200);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText(temp.substring(0,temp.indexOf("."))+" C", (float) (width * 0.7), (float) (height * 0.9), paint);
+        canvas.drawText(temp.substring(0, temp.indexOf(".")) + " C", (float) (width * 0.7), (float) (height * 0.9), paint);
 
         //draw chinese city name
         paint.setTextSize(150);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText(String.valueOf(weatherAPI.getCity_zh()), (float) (width * 0.15 + height * 0.13 ), (float) (height *0.86), paint);
+        canvas.drawText(String.valueOf(weatherAPI.getCityZhbyGPS()), (float) (width * 0.15 + height * 0.13), (float) (height * 0.86), paint);
 
         //draw english city name
         paint.setTextSize(150);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText(String.valueOf(weatherAPI.getCity_en()), (float) (width * 0.15 + height * 0.13), (float) (height * 0.93), paint);
-
+        canvas.drawText(String.valueOf(weatherAPI.getCityEnbyGPS()), (float) (width * 0.15 + height * 0.13), (float) (height * 0.93), paint);
 
 
         getOutputPermission();
         return weatherBitmap;
     }
 
-    private void getOutputPermission(){
+    private void getOutputPermission() {
         String[] perms = {"android.permission.WRITE_EXTERNAL_STORAGE"};
         int permsRequestCode = 400;
         requestPermissions(perms, permsRequestCode);
     }
 
-    private void ouputBitmapToFile(){
+    private void ouputBitmapToFile() {
         try {
             FileOutputStream out;
             sourceFile = new File(Environment.getExternalStorageDirectory().toString(), "sourceTmp.jpg");
             out = new FileOutputStream(sourceFile);
-            sourceBitmap = Bitmap.createScaledBitmap(sourceBitmap, (int)(sourceBitmap.getWidth()*0.5), (int)(sourceBitmap.getHeight()*0.5), false);
-            sourceBitmap.compress(Bitmap.CompressFormat.JPEG,50, out);
-
-
+            sourceBitmap = Bitmap.createScaledBitmap(sourceBitmap, (int) (sourceBitmap.getWidth() * 0.5), (int) (sourceBitmap.getHeight() * 0.5), false);
+            sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 50, out);
 
 
             weatherFile = new File(Environment.getExternalStorageDirectory().toString(), "weatherTmp.jpg");
             out = new FileOutputStream(weatherFile);
-            weatherBitmap = Bitmap.createScaledBitmap(weatherBitmap, (int)(weatherBitmap.getWidth()*0.5), (int)(weatherBitmap.getHeight()*0.5), false);
-            weatherBitmap.compress(Bitmap.CompressFormat.JPEG,50, out);
+            weatherBitmap = Bitmap.createScaledBitmap(weatherBitmap, (int) (weatherBitmap.getWidth() * 0.5), (int) (weatherBitmap.getHeight() * 0.5), false);
+            weatherBitmap.compress(Bitmap.CompressFormat.JPEG, 50, out);
 
 
             out.flush();
