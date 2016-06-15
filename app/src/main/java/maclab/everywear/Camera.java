@@ -57,6 +57,11 @@ public class Camera extends AppCompatActivity {
     private final int SEND_SOURCE_FILE = 0;
     private final int SEND_WEATHER_FILE =1;
 
+    private FBData fbData;
+    private WeatherAPI weatherAPI;
+
+    private String timeStampName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,6 +83,9 @@ public class Camera extends AppCompatActivity {
             dispatchTakePictureIntent();
         }
 
+        fbData = (FBData) getIntent().getSerializableExtra("data");
+        weatherAPI = new WeatherAPI(this);
+
         btn_post = (Button) findViewById(R.id.btn_post);
         progress = new ProgressDialog(this);
         btn_post.setOnClickListener(new View.OnClickListener() {
@@ -86,6 +94,8 @@ public class Camera extends AppCompatActivity {
                 progress.setTitle("Loading");
                 progress.setMessage("Wait while loading...");
                 progress.show();
+
+                getTimeStampName();
                 sendPicRequest(SEND_SOURCE_FILE);
                 sendPicRequest(SEND_WEATHER_FILE);
                 sendPostRequest();
@@ -283,19 +293,22 @@ public class Camera extends AppCompatActivity {
         }
     }
 
+    private void getTimeStampName(){
+        timeStampName = "id_";
+        Calendar mCal = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
+        timeStampName += df.format(mCal.getTime());
+    }
+
     private void sendPicRequest(int whichFile) {
-        class AddPostRunnable implements Runnable {
+        class AddPicRunnable implements Runnable {
 
             File inputFile;
             String attachmentFileName;
 
-            AddPostRunnable(int whichFile) {
-                attachmentFileName = "id_";
+            AddPicRunnable(int whichFile) {
 
-                Calendar mCal = Calendar.getInstance();
-                SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
-                attachmentFileName += df.format(mCal.getTime());
-
+                attachmentFileName = timeStampName;
                 switch(whichFile){
                     case SEND_SOURCE_FILE:
                         this.inputFile = sourceFile;
@@ -383,26 +396,24 @@ public class Camera extends AppCompatActivity {
 
             }
         }
-        Thread t = new Thread(new AddPostRunnable(whichFile));
+        Thread t = new Thread(new AddPicRunnable(whichFile));
         t.start();
 
     }
 
-    private void sendPostRequest(String... args) {
-        class AddUserRunnable implements Runnable {
+    private void sendPostRequest() {
+        class AddPostRunnable implements Runnable {
 
-            String[] args;
-
-            AddUserRunnable(String[] args) {
-                this.args = args;
-            }
 
             @Override
             public void run() {
-                for (int i = 0; i < args.length; i += 2) {
-                    databaseUrl += i == 0 ? "?" : "&";
-                    databaseUrl += args[i] + "=" + args[i + 1];
-                }
+                databaseUrl+="?action=addPost";
+                databaseUrl+="&uId="+fbData.getUserName();
+                databaseUrl+="&oPic="+timeStampName+".jpg";
+                databaseUrl+="&wPic="+timeStampName+"_revised.jpg";
+                databaseUrl+="&city_zh="+String.valueOf(weatherAPI.getCity_zh());
+                databaseUrl+="&city_en="+String.valueOf(weatherAPI.getCity_en());
+
                 Log.d("FB", databaseUrl);
                 URL url = null;
                 HttpURLConnection urlConnection = null;
@@ -423,7 +434,7 @@ public class Camera extends AppCompatActivity {
                 }
             }
         }
-        Thread t = new Thread(new AddUserRunnable(args));
+        Thread t = new Thread(new AddPostRunnable());
         t.start();
 
     }
@@ -464,7 +475,7 @@ public class Camera extends AppCompatActivity {
         //draw original bitmap
         canvas.drawBitmap(bitmap, 0, 0, paint);
 
-        //TODO: add weather API
+        //TODO: add new version weather API
 
         //draw rectangle
         paint.setColor(Color.WHITE);
@@ -477,22 +488,25 @@ public class Camera extends AppCompatActivity {
         canvas.drawBitmap(statusIcon, (float) (width * 0.11), (float) (height * 0.81), paint);
 
         //draw text
+        Calendar mCal = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
+        String temp=String.valueOf(weatherAPI.getTempbyGPS(new SimpleDateFormat("yyyy/MM/dd").format(mCal.getTime()), new SimpleDateFormat("HH").format(mCal.getTime())));
         paint.setTextSize(200);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText("28 C", (float) (width * 0.7), (float) (height * 0.9), paint);
+        canvas.drawText(temp.substring(0,temp.indexOf("."))+" C", (float) (width * 0.7), (float) (height * 0.9), paint);
 
         //draw chinese city name
         paint.setTextSize(150);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText("台北市", (float) (width * 0.15 + height * 0.13 ), (float) (height *0.86), paint);
+        canvas.drawText(String.valueOf(weatherAPI.getCity_zh()), (float) (width * 0.15 + height * 0.13 ), (float) (height *0.86), paint);
 
         //draw english city name
         paint.setTextSize(150);
         paint.setAlpha(0);
         paint.setColor(Color.BLACK);
-        canvas.drawText("Taipei city", (float) (width * 0.15 + height * 0.13), (float) (height * 0.93), paint);
+        canvas.drawText(String.valueOf(weatherAPI.getCity_en()), (float) (width * 0.15 + height * 0.13), (float) (height * 0.93), paint);
 
 
 
