@@ -1,6 +1,5 @@
 package maclab.everywear;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,9 +13,16 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
-import com.facebook.FacebookSdk;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-import java.io.Serializable;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class Feed extends AppCompatActivity {
@@ -30,10 +36,10 @@ public class Feed extends AppCompatActivity {
     private ImageButton tab_setting;
 
     private FBData fbData;
+    private String databaseUrl = "http://140.116.245.241:9999/UserPost.php";
 
     private final int SETTING_LOGIN_REQUEST = 10;
     private final int CAMERA_LOGIN_REQUEST = 20;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,29 +61,65 @@ public class Feed extends AppCompatActivity {
     }
 
     private void loadFeed(){
-        feedItem = new FeedItem(1, "John", "wear", "status", "pic", "time", "url");
-        feedItems.add(feedItem);
-        feedItem = new FeedItem(2, "Mary", "wear", "status", "pic", "time", "url");
-        feedItems.add(feedItem);
-        feedItem = new FeedItem(3, "Jim", "wear", "status", "pic", "time", "url");
-        feedItems.add(feedItem);
-        feedItem = new FeedItem(4, "Jenny", "wear", "status", "pic", "time", "url");
-        feedItems.add(feedItem);
+        getPostRequest();
+    }
 
+    private void getPostRequest() {
+        class AddPostRunnable implements Runnable {
 
-
-
-        listView = (ListView)findViewById(R.id.listview_feed);
-        listAdapter = new FeedListAdapter(this, feedItems);
-        listView.setAdapter(listAdapter);
-        /*
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> patent, View view, int position, long id) {
-                Toast.makeText(getApplicationContext(), "You choose " + feedItems.get(position).getName(), Toast.LENGTH_SHORT).show();
+            public void run() {
+                databaseUrl+="?action=getPost";
+
+                URL url = null;
+                HttpURLConnection urlConnection = null;
+                try {
+                    url = new URL(databaseUrl);
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
+                    try {
+
+                        JSONArray array = new JSONArray(readStream(urlConnection.getInputStream()));
+
+                        for (int i = 0; i < array.length(); i++) {
+                            JSONObject jsonObject = array.getJSONObject(i);
+                            feedItem = new FeedItem(Integer.valueOf(jsonObject.getString("no")), jsonObject.getString("name"), jsonObject.getString("pic"), jsonObject.getString("weather_pic"));
+                            feedItems.add(feedItem);
+                        }
+
+                        listView = (ListView)findViewById(R.id.listview_feed);
+                        listAdapter = new FeedListAdapter(Feed.this, feedItems);
+                        listView.setAdapter(listAdapter);
+                    } catch (JSONException e) {
+                        Log.e("Everywear", "unexpected JSON exception", e);
+                        // Do something to recover ... or kill the app.
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (urlConnection != null) {
+                        urlConnection.disconnect();
+                    }
+                }
             }
-        });
-        */
+        }
+        Thread t = new Thread(new AddPostRunnable());
+        t.start();
+    }
+
+    private String readStream(InputStream in) {
+        BufferedReader r = new BufferedReader(new InputStreamReader(in));
+        StringBuilder total = new StringBuilder();
+        String line = null;
+        try {
+            while ((line = r.readLine()) != null) {
+                total.append(line).append('\n');
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return total.toString();
     }
 
     private ImageButton.OnClickListener feedOnClickListener = new ImageButton.OnClickListener(){
@@ -144,7 +186,6 @@ public class Feed extends AppCompatActivity {
             }
         }
     }
-
 
     private void checkNetworkStatus() {
         ConnectivityManager mConnectivityManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);

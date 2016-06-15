@@ -1,24 +1,25 @@
 package maclab.everywear;
 
+import java.io.InputStream;
 import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
-import android.text.Html;
-import android.text.TextUtils;
-import android.text.format.DateUtils;
-import android.text.method.LinkMovementMethod;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class FeedListAdapter extends BaseAdapter {
     private Activity activity;
     private LayoutInflater inflater;
     private List<FeedItem> feedItems;
-    // ImageLoader imageLoader = AppController.getInstance().getImageLoader();
 
     public FeedListAdapter(Activity activity, List<FeedItem> feedItems) {
         this.activity = activity;
@@ -49,70 +50,44 @@ public class FeedListAdapter extends BaseAdapter {
         if (convertView == null)
             convertView = inflater.inflate(R.layout.feed_item, null);
 
-        // if (imageLoader == null)
-            // imageLoader = AppController.getInstance().getImageLoader();
-
         TextView name = (TextView) convertView.findViewById(R.id.name);
-        // TextView timestamp = (TextView) convertView.findViewById(R.id.timestamp);
-        // TextView statusMsg = (TextView) convertView.findViewById(R.id.txtStatusMsg);
-        // TextView url = (TextView) convertView.findViewById(R.id.txtUrl);
-        // NetworkImageView profilePic = (NetworkImageView) convertView.findViewById(R.id.profilePic);
-        // FeedImageView feedImageView = (FeedImageView) convertView.findViewById(R.id.feedImage1);
 
+        // get item
         FeedItem item = feedItems.get(position);
-
+        // set user name
         name.setText(item.getName());
-
-        // Converting timestamp into x ago format
-        /* CharSequence timeAgo = DateUtils.getRelativeTimeSpanString(
-                Long.parseLong(item.getTimeStamp()),
-                System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS);
-        timestamp.setText(timeAgo); */
-
-        // Chcek for empty status message
-        /* if (!TextUtils.isEmpty(item.getStatus())) {
-            statusMsg.setText(item.getStatus());
-            statusMsg.setVisibility(View.VISIBLE);
-        } else { */
-            // status is empty, remove from view
-        /*    statusMsg.setVisibility(View.GONE);
-        } */
-
-        // Checking for null feed url
-        /* if (item.getUrl() != null) {
-            url.setText(Html.fromHtml("<a href=\"" + item.getUrl() + "\">"
-                    + item.getUrl() + "</a> ")); */
-
-            // Making url clickable
-            /*url.setMovementMethod(LinkMovementMethod.getInstance());
-            url.setVisibility(View.VISIBLE);
-        } else { */
-            // url is null, remove from the view
-            /* url.setVisibility(View.GONE);
-        } */
-
-        // user profile pic
-        // profilePic.setImageUrl(item.getProfilePic(), imageLoader);
-
-        // Feed image
-        /* if (item.getImge() != null) {
-            feedImageView.setImageUrl(item.getImge(), imageLoader);
-            feedImageView.setVisibility(View.VISIBLE);
-            feedImageView
-                    .setResponseObserver(new FeedImageView.ResponseObserver() {
-                        @Override
-                        public void onError() {
-                        }
-
-                        @Override
-                        public void onSuccess() {
-                        }
-                    });
-        } else {
-            feedImageView.setVisibility(View.GONE);
-        } */
+        // set profile picture
+        new DownloadImageTask((ImageView) convertView.findViewById(R.id.pic_profile)).execute(item.getPic());
+        // set weather picture
+        new DownloadImageTask((ImageView) convertView.findViewById(R.id.pic_wearing)).execute(item.getWeather_pic());
 
         return convertView;
     }
 
+    // load image by url
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+
+        public DownloadImageTask(ImageView bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... urls) {
+            String url_display = urls[0];
+            Bitmap mIcon11 = null;
+            try {
+                InputStream in = new java.net.URL(url_display).openStream();
+                mIcon11 = BitmapFactory.decodeStream(in);
+            } catch (Exception e) {
+                Log.e("Error", e.getMessage());
+                e.printStackTrace();
+            }
+            return mIcon11;
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            bmImage.setImageBitmap(result);
+        }
+    }
 }
+
