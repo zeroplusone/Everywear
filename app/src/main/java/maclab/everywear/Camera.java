@@ -294,7 +294,7 @@ public class Camera extends AppCompatActivity {
     }
 
     private void getTimeStampName(){
-        timeStampName = "id_";
+        timeStampName = fbData.getUserId()+"_";
         Calendar mCal = Calendar.getInstance();
         SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_hhmmss");
         timeStampName += df.format(mCal.getTime());
@@ -408,7 +408,7 @@ public class Camera extends AppCompatActivity {
             @Override
             public void run() {
                 databaseUrl+="?action=addPost";
-                databaseUrl+="&uId="+fbData.getUserName();
+                databaseUrl+="&id="+fbData.getUserId();
                 databaseUrl+="&oPic="+timeStampName+".jpg";
                 databaseUrl+="&wPic="+timeStampName+"_revised.jpg";
                 databaseUrl+="&city_zh="+String.valueOf(weatherAPI.getCity_zh());
