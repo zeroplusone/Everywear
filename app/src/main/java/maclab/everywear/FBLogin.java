@@ -122,6 +122,7 @@ public class FBLogin extends AppCompatActivity {
             @Override
             public void run() {
                 for (int i = 0; i < args.length; i += 2) {
+                    args[i+1]=args[i+1].replace("&","%26");
                     serverUrl += i == 0 ? "?" : "&";
                     serverUrl += args[i] + "=" + args[i + 1];
                 }

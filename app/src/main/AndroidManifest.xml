@@ -34,8 +34,10 @@
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
             android:label="@string/app_name"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-        <activity android:name=".FBLogin"
-            android:label="FB Login"/>
+        <activity
+            android:name=".FBLogin"
+            android:label="FB Login" />
+        <activity android:name=".Setting"></activity>
     </application>
 
 </manifest>

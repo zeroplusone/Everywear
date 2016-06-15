@@ -112,10 +112,10 @@ public class Feed extends AppCompatActivity {
                 login(SETTING_LOGIN_REQUEST);
             }
             else {
-                //TODO: link to Setting activity
-                Log.d("FB", "feed" + fbData.getUserId());
-                Log.d("FB", "feed" + fbData.getUserName());
-                Log.d("FB", "feed" + fbData.getUserPic());
+                Intent settingIntent = new Intent();
+                settingIntent.setClass(Feed.this, Setting.class);
+                settingIntent.putExtra("data", fbData);
+                startActivity(settingIntent);
             }
         }
     };
@@ -132,7 +132,10 @@ public class Feed extends AppCompatActivity {
         if (requestCode == SETTING_LOGIN_REQUEST) {
             if(resultCode == RESULT_OK){
                 fbData = (FBData) data.getSerializableExtra("data");
-                //TODO: link to Setting activity
+                Intent settingIntent = new Intent();
+                settingIntent.setClass(Feed.this, Setting.class);
+                settingIntent.putExtra("data", fbData);
+                startActivity(settingIntent);
             }
         } else if (requestCode == CAMERA_LOGIN_REQUEST) {
             if(resultCode == RESULT_OK){

@@ -351,8 +351,9 @@ public class Camera extends AppCompatActivity {
                     httpUrlConnection.setRequestMethod("POST");
                     httpUrlConnection.setRequestProperty("Connection", "Keep-Alive");
                     httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
+                    httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
                     httpUrlConnection.setRequestProperty(
-                            "Content-Type", "multipart/form-data;boundary=" + boundary);
+                            "Content-Type", "multipart/form-data;boundary=" + boundary+";charset=utf-8");
 
                     // start content wrapper
                     DataOutputStream request = new DataOutputStream(httpUrlConnection.getOutputStream());
