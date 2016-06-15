@@ -35,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:id="@+id/pic_wearing"
-            android:src="@drawable/john" />
+            android:src="@drawable/loading" />
     </LinearLayout>
 
     <LinearLayout
