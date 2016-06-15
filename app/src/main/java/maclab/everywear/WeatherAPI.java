@@ -125,6 +125,12 @@ public class WeatherAPI {
         return Double.valueOf(ret);
     }
 
+    public int getStatusbyGPSNow() {
+        String url = byNow("shortinfo");
+        String ret = getData(url);
+        return rangeStatus(ret);
+    }
+
 
     public double getRainbyGPS(String date, String time) {
         String url = byGPS("rain", date, time);
@@ -156,6 +162,13 @@ public class WeatherAPI {
         return Double.valueOf(ret);
     }
 
+    public int getStatusbyGPS(String date, String time) {
+        String url = byGPS("shortinfo", date, time);
+        String ret = getData(url);
+        return rangeStatus(ret);
+    }
+
+
     public double getRainbyCity(String city, String date, String time) {
         String url = byCity("rain", city, date, time);
         String ret = getData(url);
@@ -184,6 +197,12 @@ public class WeatherAPI {
         String url = byCity("temp", city, date, time);
         String ret = getData(url);
         return Double.valueOf(ret);
+    }
+
+    public int getStatusbyCity(String city, String date, String time) {
+        String url = byCity("shortinfo", city, date, time);
+        String ret = getData(url);
+        return rangeStatus(ret);
     }
 
     private int rangeUV(int uv) {
@@ -216,6 +235,20 @@ public class WeatherAPI {
         ret = ret < 1 ? 1 : ret;
         ret = ret > 6 ? 6 : ret;
         return ret;
+    }
+
+    private int rangeStatus(String ret){
+        int status = 1;
+        // 1:sun, 2:cloud, 3:rain
+        if(ret.equals("Clear")){
+            return 1;
+        }else if(ret.equals("Clouds")){
+            return 2;
+        }else if(ret.equals("Rain")){
+            return 3;
+        }else{
+            return 1;
+        }
     }
 
     private String getData(String url) {

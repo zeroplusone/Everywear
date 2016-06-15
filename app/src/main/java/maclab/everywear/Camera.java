@@ -479,15 +479,28 @@ public class Camera extends AppCompatActivity {
         //draw original bitmap
         canvas.drawBitmap(bitmap, 0, 0, paint);
 
-        //TODO: add new version weather API
-
         //draw rectangle
         paint.setColor(Color.WHITE);
         paint.setAlpha(150);
         canvas.drawRect((float) (width * 0.1), (float) (height * 0.8), (float) (width * 0.1 + width * 0.8), (float) (height * 0.8 + height * 0.15), paint);
 
         //draw status
-        Bitmap statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.sun);
+        Bitmap statusIcon;
+        switch(weatherAPI.getStatusbyGPSNow()){
+            case 1:
+                statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.sun);
+                break;
+            case 2:
+                statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.cloud);
+                break;
+            case 3:
+                statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.rain);
+                break;
+            default:
+                statusIcon = BitmapFactory.decodeResource(getResources(), R.drawable.sun);
+                break;
+        }
+
         statusIcon = Bitmap.createScaledBitmap(statusIcon, (int) (height * 0.13), (int) (height * 0.13), false);
         canvas.drawBitmap(statusIcon, (float) (width * 0.11), (float) (height * 0.81), paint);
 

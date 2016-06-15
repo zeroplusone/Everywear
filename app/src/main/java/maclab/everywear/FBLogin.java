@@ -10,7 +10,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
+import com.facebook.FacebookAuthorizationException;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
@@ -77,7 +79,7 @@ public class FBLogin extends AppCompatActivity {
                                             Log.d("FB", fbData.getUserName());
                                             Log.d("FB", fbData.getUserPic());
                                             sendRequest("action", "addUser", "id", fbData.getUserId(), "name", fbData.getUserName(), "pic", fbData.getUserPic());
-                                            sendDataBack();
+
                                         } catch (JSONException e) {
                                             e.printStackTrace();
                                         }
@@ -98,7 +100,15 @@ public class FBLogin extends AppCompatActivity {
 
                     @Override
                     public void onError(FacebookException error) {
+
                         Log.d("FB", error.toString());
+                        if (error instanceof FacebookAuthorizationException) {
+                            if (AccessToken.getCurrentAccessToken() != null) {
+                                LoginManager.getInstance().logOut();
+                                onFblogin();
+                            }
+                        }
+
                     }
                 });
     }
@@ -123,6 +133,7 @@ public class FBLogin extends AppCompatActivity {
             public void run() {
                 for (int i = 0; i < args.length; i += 2) {
                     args[i+1]=args[i+1].replace("&","%26");
+                    args[i+1]=args[i+1].replace(" ","%20");
                     serverUrl += i == 0 ? "?" : "&";
                     serverUrl += args[i] + "=" + args[i + 1];
                 }
@@ -135,7 +146,7 @@ public class FBLogin extends AppCompatActivity {
                     urlConnection.setRequestMethod("GET");
                     urlConnection.connect();
                     Log.d("FB", readStream(urlConnection.getInputStream()));
-
+                    sendDataBack();
 
                 } catch (IOException e) {
                     e.printStackTrace();
