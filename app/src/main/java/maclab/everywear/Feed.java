@@ -71,6 +71,7 @@ public class Feed extends AppCompatActivity {
             public void run() {
                 databaseUrl+="?action=getPost";
 
+
                 URL url = null;
                 HttpURLConnection urlConnection = null;
                 try {
