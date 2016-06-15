@@ -106,6 +106,9 @@ public class Camera extends AppCompatActivity {
         btn_cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.putExtra("data",fbData);
+                setResult(RESULT_OK, intent);
                 finish();
             }
         });
@@ -457,9 +460,9 @@ public class Camera extends AppCompatActivity {
 
     private void turnToFeed(){
         progress.dismiss();
-        Intent postIntent = new Intent();
-        postIntent.setClass(Camera.this, Feed.class);
-        startActivity(postIntent);
+        Intent intent = new Intent();
+        intent.putExtra("data",fbData);
+        setResult(RESULT_OK, intent);
         finish();
     }
 
