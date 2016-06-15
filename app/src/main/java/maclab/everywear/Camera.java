@@ -46,6 +46,7 @@ public class Camera extends AppCompatActivity {
     private static final String JPEG_FILE_PREFIX = "IMG_";
     private static final String JPEG_FILE_SUFFIX = ".jpg";
     private AlbumStorageDirFactory mAlbumStorageDirFactory = null;
+    private Bitmap sourceBitmap = null;
     private Bitmap weatherBitmap = null;
     private File sourceFile = null;
     private File weatherFile = null;
@@ -243,9 +244,9 @@ public class Camera extends AppCompatActivity {
         bmOptions.inPurgeable = true;
 
 		/* Decode the JPEG file into a Bitmap */
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
+        sourceBitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
 
-        Bitmap drawnBitmap = drawWeatherData(bitmap);
+        Bitmap drawnBitmap = drawWeatherData(sourceBitmap);
 
 
 		/* Associate the Bitmap to the ImageView */
@@ -526,10 +527,21 @@ public class Camera extends AppCompatActivity {
 
     private void ouputBitmapToFile(){
         try {
+            FileOutputStream out;
+            sourceFile = new File(Environment.getExternalStorageDirectory().toString(), "sourceTmp.jpg");
+            out = new FileOutputStream(sourceFile);
+            sourceBitmap = Bitmap.createScaledBitmap(sourceBitmap, (int)(sourceBitmap.getWidth()*0.5), (int)(sourceBitmap.getHeight()*0.5), false);
+            sourceBitmap.compress(Bitmap.CompressFormat.JPEG,50, out);
+
+
+
 
             weatherFile = new File(Environment.getExternalStorageDirectory().toString(), "weatherTmp.jpg");
-            FileOutputStream out = new FileOutputStream(weatherFile);
-            weatherBitmap.compress(Bitmap.CompressFormat.JPEG,95, out);
+            out = new FileOutputStream(weatherFile);
+            weatherBitmap = Bitmap.createScaledBitmap(weatherBitmap, (int)(weatherBitmap.getWidth()*0.5), (int)(weatherBitmap.getHeight()*0.5), false);
+            weatherBitmap.compress(Bitmap.CompressFormat.JPEG,50, out);
+
+
             out.flush();
             out.close();
         } catch (IOException e) {
